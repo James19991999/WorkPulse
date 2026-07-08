@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #f8f9ff;
+  --surface-dim: #cbdbf5;
+  --surface-bright: #f8f9ff;
+  --on-surface: #0b1c30;
+  --on-surface-variant: #474651;
+  --primary: #1a146b;
+  --on-primary: #ffffff;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --outline: #777682;
+}
+
+* {
+  @apply transition-colors duration-200;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    @apply !transition-none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
