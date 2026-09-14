@@ -6,9 +6,12 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  sendPasswordResetEmail,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+
+type Mode = 'sign-in' | 'sign-up' | 'forgot-password';
 
 export function LoginPage() {
   const router = useRouter();
@@ -16,7 +19,9 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [mode, setMode] = useState<Mode>('sign-in');
+  const isSignUp = mode === 'sign-up';
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +44,26 @@ export function LoginPage() {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err: any) {
+      // Deliberately don't distinguish "no account with that email" from any
+      // other failure in the UI — confirming or denying that an email is
+      // registered is an account-enumeration leak. Firebase itself no longer
+      // returns auth/user-not-found for this call by default, but we still
+      // normalize the message here rather than trust that behavior.
+      console.error('Password reset error:', err);
+    } finally {
+      setResetSent(true);
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError('');
     setLoading(true);
@@ -55,6 +80,67 @@ export function LoginPage() {
       setLoading(false);
     }
   };
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError('');
+    setResetSent(false);
+  }
+
+  if (mode === 'forgot-password') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="w-full max-w-md p-8 bg-slate-800/50 backdrop-blur-md rounded-xl shadow-2xl border border-slate-700">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Reset your password</h1>
+            <p className="text-slate-400">
+              Enter your email and we&apos;ll send you a link to reset it.
+            </p>
+          </div>
+
+          {resetSent ? (
+            <div className="mb-6 p-4 bg-blue-900/20 border border-blue-700 text-blue-200 rounded-lg text-sm">
+              If an account exists for <span className="font-medium">{email}</span>, a
+              password reset link is on its way. Check your inbox (and spam folder).
+            </div>
+          ) : (
+            <form onSubmit={handlePasswordReset} className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-200 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Sending…' : 'Send reset link'}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => switchMode('sign-in')}
+              className="text-sm text-blue-400 hover:text-blue-300 transition"
+            >
+              Back to sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -87,9 +173,20 @@ export function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-1">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-200">
+                Password
+              </label>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => switchMode('forgot-password')}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <input
               type="password"
               value={password}
@@ -143,7 +240,7 @@ export function LoginPage() {
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => switchMode(isSignUp ? 'sign-in' : 'sign-up')}
             className="text-sm text-blue-400 hover:text-blue-300 transition"
           >
             {isSignUp

@@ -1,12 +1,16 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'WorkPulse - Hybrid Work Analytics',
   description: 'WorkPulse: Real-time presence, productivity gaps, equity/fairness, and engagement analytics for hybrid teams.',
-  viewport: 'width=device-width, initial-scale=1',
   icons: { icon: '/favicon.ico' },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
